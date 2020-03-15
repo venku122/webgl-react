@@ -2,10 +2,11 @@ import React, { Component } from 'react';
 import shader1 from './shaders/vertex/shader1';
 import vertex2 from './shaders/vertex/vertex2';
 import vertex3 from './shaders/vertex/vertex3';
+import vertex4 from './shaders/vertex/vertex4';
 import frag1 from './shaders/fragment/frag1';
 import frag2 from './shaders/fragment/frag2';
 import frag3 from './shaders/fragment/frag3';
-import frag4 from './shaders/fragment/frag4';
+import frag5 from './shaders/fragment/frag5';
 import logo from './logo.svg';
 import './App.css';
 
@@ -23,7 +24,7 @@ class App extends Component {
     }, 1000)
   }
 
-  createVertexBuffer = (vertices: number[]): WebGLBuffer => {
+  createArrayBuffer = (vertices: number[]): WebGLBuffer => {
     const { gl } = this;
     // create new buffer object
     const vertex_buffer = gl.createBuffer()!;
@@ -40,7 +41,7 @@ class App extends Component {
     return vertex_buffer;
   }
 
-  createIndexBuffer = (indices: number[]): WebGLBuffer => {
+  createElementBuffer = (indices: number[]): WebGLBuffer => {
     const { gl } = this;
     const index_buffer = gl.createBuffer()!;
 
@@ -124,13 +125,16 @@ class App extends Component {
       0.5,-0.5,0.0,
       0.5,0.5,0.0 
    ];
-   const vertex_buffer = this.createVertexBuffer(vertices);
+   const vertex_buffer = this.createArrayBuffer(vertices);
 
    const indices = [3,2,1,3,1,0];
-   const index_buffer = this.createIndexBuffer(indices);
+   const index_buffer = this.createElementBuffer(indices);
 
-   const vertShader = this.createVertexShader(vertex3);
-   const fragShader = this.createFragmentShader(frag4);
+   const colors = [ 0,0,1, 1,0,0, 0,1,0, 1,0,1,];
+   const color_buffer = this.createArrayBuffer(colors);
+
+   const vertShader = this.createVertexShader(vertex4);
+   const fragShader = this.createFragmentShader(frag5);
 
    const shaderProgram = this.createShaderProgram([vertShader, fragShader]);
 
@@ -138,8 +142,17 @@ class App extends Component {
    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
 
    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
-
+   
    this.createAttribute(shaderProgram, 'coordinates', 3);
+
+   gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
+
+   this.createAttribute(shaderProgram, 'color', 3);
+
+   gl.enable(gl.DEPTH_TEST);
+
+   // set the viewport
+   gl.viewport(0,0, gl.canvas.width, gl.canvas.height);
 
    this.drawElements(indices.length);
   }
@@ -155,7 +168,7 @@ class App extends Component {
       0.7,0.6,0 
     ];
 
-   const vertex_buffer = this.createVertexBuffer(vertices);
+   const vertex_buffer = this.createArrayBuffer(vertices);
 
    const vertShader = this.createVertexShader(vertex3);
 
@@ -186,10 +199,10 @@ class App extends Component {
       -0.5,-0.5,0.0,
       0.5,-0.5,0.0, 
     ];
-    const vertex_buffer = this.createVertexBuffer(vertices);
+    const vertex_buffer = this.createArrayBuffer(vertices);
 
     const indices = [0, 1, 2];
-    const index_buffer = this.createIndexBuffer(indices);
+    const index_buffer = this.createElementBuffer(indices);
     
     const vertexShader = this.createVertexShader(vertex3);
     const fragShader = this.createFragmentShader(frag3);
@@ -222,7 +235,7 @@ class App extends Component {
       -0.25,0.25,0.0, 
    ];
 
-   const vertex_buffer = this.createVertexBuffer(verticies);
+   const vertex_buffer = this.createArrayBuffer(verticies);
 
    const vertexShader = this.createVertexShader(vertex2);
 
@@ -250,7 +263,7 @@ class App extends Component {
     let vertices = [-0.9, 0.9, -0.1, -0.9, 0.8, 0.2,];
 
     // create new buffer object
-    const vertex_buffer = this.createVertexBuffer(vertices);
+    const vertex_buffer = this.createArrayBuffer(vertices);
 
     /* Create and compile shader programs */
     // create a vertex shader object
