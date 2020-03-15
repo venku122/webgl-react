@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
 import shader1 from './shaders/vertex/shader1';
 import vertex2 from './shaders/vertex/vertex2';
+import vertex3 from './shaders/vertex/vertex3';
 import frag1 from './shaders/fragment/frag1';
 import frag2 from './shaders/fragment/frag2';
+import frag3 from './shaders/fragment/frag3';
 import logo from './logo.svg';
 import './App.css';
 
@@ -13,7 +15,7 @@ class App extends Component {
 
   componentDidMount = () => {
     this.initializeCanvas();
-    this.initializePoints();
+    this.intializeComplexTriangle();
   }
 
   createVertexBuffer = (vertices: number[]): WebGLBuffer => {
@@ -31,6 +33,19 @@ class App extends Component {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
     return vertex_buffer;
+  }
+
+  createIndexBuffer = (indices: number[]): WebGLBuffer => {
+    const { gl } = this;
+    const index_buffer = gl.createBuffer()!;
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
+
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+    return index_buffer;
   }
 
 
@@ -82,6 +97,49 @@ class App extends Component {
 
     this.gl = gl;
     this.canvas = canvas;
+  }
+
+  intializeComplexTriangle = () => {
+    const { gl, canvas } = this;
+
+    const vertices = [
+      -0.5,0.5,0.0,
+      -0.5,-0.5,0.0,
+      0.5,-0.5,0.0, 
+    ];
+    const vertex_buffer = this.createVertexBuffer(vertices);
+
+    const indices = [0, 1, 2];
+    const index_buffer = this.createIndexBuffer(indices);
+    
+    const vertexShader = this.createVertexShader(vertex3);
+    const fragShader = this.createFragmentShader(frag3);
+
+    const shaderProgram = this.createShaderProgram([vertexShader, fragShader]);
+
+    // bind vertex buffer object
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+
+    // bind index buffer object
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
+
+    // get attribute location
+    let coord = gl.getAttribLocation(shaderProgram, 'coordinates');
+
+    // point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
+
+    // enable attribute
+    gl.enableVertexAttribArray(coord);
+
+    // enable the depth test
+    gl.enable(gl.DEPTH_TEST);
+
+    // set the viewport
+    gl.viewport(0,0,canvas.width, canvas.height);
+    
+
+    this.drawElements(indices.length);
   }
 
   initializePoints = () => {
@@ -161,6 +219,21 @@ class App extends Component {
     gl.viewport(0,0,canvas.width, canvas.height);
 
     this.drawTriangles();
+  }
+
+  drawElements = (length: number) => {
+    /* Drawing the required objects (triangle) */
+    const { gl } = this;
+    // clear the canvas
+    gl.clearColor(0.5, 0.5, 0.5, 0.9);
+
+    // clear the color buffer bit
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Draw the triangle
+    gl.drawElements(gl.TRIANGLES, length, gl.UNSIGNED_SHORT, 0);
+
+    requestAnimationFrame(() => this.drawElements(length));
   }
 
   drawTriangles = () =>{
