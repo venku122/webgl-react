@@ -12,10 +12,15 @@ class App extends Component {
 
   private gl!: WebGLRenderingContext;
   private canvas!: HTMLCanvasElement;
+  private frames: number = 0;
+  private currentRenderMethod: number = 0;
 
   componentDidMount = () => {
     this.initializeCanvas();
-    this.intializeComplexTriangle();
+    this.intializeLines();
+    setInterval(() => {
+      this.currentRenderMethod = this.currentRenderMethod + 1;
+    }, 1000)
   }
 
   createVertexBuffer = (vertices: number[]): WebGLBuffer => {
@@ -99,6 +104,46 @@ class App extends Component {
     this.canvas = canvas;
   }
 
+  intializeLines = () => {
+    const { gl, canvas } = this;
+    const vertices = [
+      -0.7,-0.1,0,
+      -0.3,0.6,0,
+      -0.3,-0.3,0,
+      0.2,0.6,0,
+      0.3,-0.3,0,
+      0.7,0.6,0 
+    ];
+
+   const vertex_buffer = this.createVertexBuffer(vertices);
+
+   const vertShader = this.createVertexShader(vertex3);
+
+   const fragShader = this.createFragmentShader(frag2);
+
+   const shaderProgram = this.createShaderProgram([vertShader, fragShader]);
+
+    // bind vertex buffer object
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+
+    // get attribute location
+    let coord = gl.getAttribLocation(shaderProgram, 'coordinates');
+
+    // point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
+
+    // enable attribute
+    gl.enableVertexAttribArray(coord);
+
+    // enable the depth test
+    gl.enable(gl.DEPTH_TEST);
+
+    // set the viewport
+    gl.viewport(0,0,canvas.width, canvas.height);
+
+    this.drawLines();
+  }
+
   intializeComplexTriangle = () => {
     const { gl, canvas } = this;
 
@@ -137,7 +182,6 @@ class App extends Component {
 
     // set the viewport
     gl.viewport(0,0,canvas.width, canvas.height);
-    
 
     this.drawElements(indices.length);
   }
@@ -265,6 +309,31 @@ class App extends Component {
     gl.drawArrays(gl.POINTS, 0, 3);
 
     requestAnimationFrame(this.drawPoints);
+  }
+
+  drawLines = () => {
+    /* Drawing the required objects (point) */
+    this.frames = this.frames + 1;
+    const { gl } = this;
+    const renderMethods = [
+      gl.POINTS,
+      gl.LINE_STRIP,
+      gl.LINE_LOOP,
+      gl.LINES,
+      gl.TRIANGLE_STRIP,
+      gl.TRIANGLE_FAN,
+      gl.TRIANGLES
+    ];
+    // Clear the canvas
+    gl.clearColor(0.5, 0.5, 0.5, 0.9);
+
+    // Clear the color and depth buffer
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // Draw the triangle
+    gl.drawArrays(renderMethods[this.currentRenderMethod % renderMethods.length], 0, 6);
+
+    requestAnimationFrame(this.drawLines);
   }
 
   render() {
