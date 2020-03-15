@@ -3,6 +3,7 @@ import shader1 from './shaders/vertex/shader1';
 import vertex2 from './shaders/vertex/vertex2';
 import vertex3 from './shaders/vertex/vertex3';
 import vertex4 from './shaders/vertex/vertex4';
+import vertex5 from './shaders/vertex/vertex5';
 import frag1 from './shaders/fragment/frag1';
 import frag2 from './shaders/fragment/frag2';
 import frag3 from './shaders/fragment/frag3';
@@ -18,7 +19,7 @@ class App extends Component {
 
   componentDidMount = () => {
     this.initializeCanvas();
-    this.initializeQuad();
+    this.initializeTranslatedTriangle();
     setInterval(() => {
       this.currentRenderMethod = this.currentRenderMethod + 1;
     }, 1000)
@@ -114,6 +115,38 @@ class App extends Component {
     const gl: WebGLRenderingContext = canvas.getContext('webgl')!;
 
     this.gl = gl;
+  }
+
+  initializeTranslatedTriangle = () => {
+    const { gl } = this;
+    const vertices = [
+      -0.5,0.5,0.0,
+      -0.5,-0.5,0.0,
+      0.5,-0.5,0.0,
+    ];
+
+    const vertex_buffer = this.createArrayBuffer(vertices);
+
+    const vertShader = this.createVertexShader(vertex5);
+    const fragShader = this.createFragmentShader(frag3);
+
+    const shaderProgram = this.createShaderProgram([vertShader, fragShader]);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+    this.createAttribute(shaderProgram, 'coordinates', 3);
+
+    const tX = 0.5;
+    const tY = 0.5;
+    const tZ = 0.0;
+    const translationPointer = gl.getUniformLocation(shaderProgram, 'translation');
+    gl.uniform4f(translationPointer, tX, tY, tZ, 0.0);
+
+    gl.enable(gl.DEPTH_TEST);
+
+    // set the viewport
+    gl.viewport(0,0, gl.canvas.width, gl.canvas.height);
+
+    this.drawTriangles();
   }
 
   initializeQuad = () => {
