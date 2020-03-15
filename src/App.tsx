@@ -6,8 +6,11 @@ import './App.css';
 
 class App extends Component {
 
+  private gl!: WebGLRenderingContext;
+
   componentDidMount = () => {
-    requestAnimationFrame(this.drawTriangle);
+    this.initialize();
+    requestAnimationFrame(this.draw);
   }
 
   createVertexBuffer = (vertices: number[], gl: WebGLRenderingContext): WebGLBuffer => {
@@ -48,10 +51,12 @@ class App extends Component {
     return this.createShader(shaderCode, gl.FRAGMENT_SHADER, gl);
   }
 
-  drawTriangle = () => {
+  initialize = () => {
     const canvas: HTMLCanvasElement = document.getElementById('webgl-target')! as HTMLCanvasElement;
     // const gl: WebGL2RenderingContext = canvas.getContext('webgl') as WebGL2RenderingContext;
     const gl: WebGLRenderingContext = canvas.getContext('webgl') as WebGLRenderingContext;
+
+    this.gl = gl;
 
     let vertices = [-0.9, 0.9, -0.1, -0.9, 0.8, 0.2,];
 
@@ -97,25 +102,28 @@ class App extends Component {
     // enable attribute
     gl.enableVertexAttribArray(coord);
 
-    /* Drawing the required objects (triangle) */
-
-    // clear the canvas
-    gl.clearColor(0.5, 0.5, 0.5, 0.9);
-
     // enable the depth test
     gl.enable(gl.DEPTH_TEST);
+
+    // set the viewport
+    gl.viewport(0,0,canvas.width, canvas.height);
+  }
+
+  draw = () =>{
+    /* Drawing the required objects (triangle) */
+    const { gl } = this;
+    // clear the canvas
+    gl.clearColor(0.5, 0.5, 0.5, 0.9);
 
     // clear the color buffer bit
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    // set the viewport
-    gl.viewport(0,0,canvas.width, canvas.height);
-
     // Draw the triangle
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    requestAnimationFrame(this.drawTriangle);
+    requestAnimationFrame(this.draw);
   }
+
   render() {
 
     return (
