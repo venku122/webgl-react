@@ -5,6 +5,7 @@ import vertex3 from './shaders/vertex/vertex3';
 import vertex4 from './shaders/vertex/vertex4';
 import vertex5 from './shaders/vertex/vertex5';
 import vertex6 from './shaders/vertex/vertex6';
+import vertex7 from './shaders/vertex/vertex7';
 import frag1 from './shaders/fragment/frag1';
 import frag2 from './shaders/fragment/frag2';
 import frag3 from './shaders/fragment/frag3';
@@ -20,7 +21,7 @@ class App extends Component {
 
   componentDidMount = () => {
     this.initializeCanvas();
-    this.initializeScaledTriangle();
+    this.initializeRotatingTriangle();
     setInterval(() => {
       this.currentRenderMethod = this.currentRenderMethod + 1;
     }, 1000)
@@ -123,6 +124,92 @@ class App extends Component {
     const gl: WebGLRenderingContext = canvas.getContext('webgl')!;
 
     this.gl = gl;
+  }
+
+  initializeRotatingTriangle = () => {
+    const { gl } = this;
+
+    const vertices = [ -1,-1,-1, 1,-1,-1, 1, 1,-1 ];
+    const vertex_buffer = this.createArrayBuffer(vertices);
+
+    const colors = [ 1,1,1, 1,1,1, 1,1,1 ];
+    const color_buffer = this.createArrayBuffer(colors);
+
+    const indices = [ 0,1,2 ];
+    const index_buffer = this.createElementBuffer(indices);
+
+    const vertShader = this.createVertexShader(vertex7);
+    const fragShader = this.createFragmentShader(frag5);
+
+    const shaderProgram = this.createShaderProgram([vertShader, fragShader]);
+
+    let Pmatrix = gl.getUniformLocation(shaderProgram, 'Pmatrix');
+    let Vmatrix = gl.getUniformLocation(shaderProgram, 'Vmatrix');
+    let Mmatrix = gl.getUniformLocation(shaderProgram, 'Mmatrix');
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+    this.createAttribute(shaderProgram, 'position', 3);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, color_buffer);
+    this.createAttribute(shaderProgram, 'color', 3);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
+
+    function get_projection(angle:number, a:number, zMin:number, zMax:number) {
+      var ang = Math.tan((angle*.5)*Math.PI/180);//angle*.5
+      return [
+         0.5/ang, 0 , 0, 0,
+         0, 0.5*a/ang, 0, 0,
+         0, 0, -(zMax+zMin)/(zMax-zMin), -1,
+         0, 0, (-2*zMax*zMin)/(zMax-zMin), 0
+      ];
+   }
+
+    let proj_matrix = get_projection(40, gl.canvas.width/gl.canvas.height, 1, 100);
+    let mov_matrix = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+    let view_matrix = [2,0,0,0, 0,2,0,0, 0,0,2,0, 0,0,0,1];
+
+    // zooming in
+    view_matrix[14] = view_matrix[14] - 6; // zoom
+
+    function rotateZ(m: number[], angle: number) {
+      var c = Math.cos(angle);
+      var s = Math.sin(angle);
+      var mv0 = m[0], mv4 = m[4], mv8 = m[8]; 
+
+      m[0] = c*m[0]-s*m[1];
+      m[4] = c*m[4]-s*m[5];
+      m[8] = c*m[8]-s*m[9];
+      m[1] = c*m[1]+s*mv0;
+      m[5] = c*m[5]+s*mv4;
+    }
+    
+
+    var time_old = 0;
+    var animate = function(time: number) {
+       var dt = time-time_old;
+       rotateZ(mov_matrix, dt*0.002);
+       time_old = time;
+
+       console.log(`time: ${time}, dt: ${dt}`);
+
+       gl.enable(gl.DEPTH_TEST);
+       gl.depthFunc(gl.LEQUAL);
+       gl.clearColor(0.5, 0.5, 0.5, 0.9);
+       gl.clearDepth(1.0);
+       gl.viewport(0.0, 0.0, gl.canvas.width, gl.canvas.height);
+       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+       gl.uniformMatrix4fv(Pmatrix, false, proj_matrix);
+       gl.uniformMatrix4fv(Vmatrix, false, view_matrix);
+       gl.uniformMatrix4fv(Mmatrix, false, mov_matrix);
+
+       // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
+       gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+       window.requestAnimationFrame(animate);
+    }
+    animate(0);
+
   }
 
   initializeScaledTriangle = () => {
