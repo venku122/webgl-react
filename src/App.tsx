@@ -5,19 +5,19 @@ import vertex3 from './shaders/vertex/vertex3';
 import frag1 from './shaders/fragment/frag1';
 import frag2 from './shaders/fragment/frag2';
 import frag3 from './shaders/fragment/frag3';
+import frag4 from './shaders/fragment/frag4';
 import logo from './logo.svg';
 import './App.css';
 
 class App extends Component {
 
   private gl!: WebGLRenderingContext;
-  private canvas!: HTMLCanvasElement;
   private frames: number = 0;
   private currentRenderMethod: number = 0;
 
   componentDidMount = () => {
     this.initializeCanvas();
-    this.intializeLines();
+    this.initializeQuad();
     setInterval(() => {
       this.currentRenderMethod = this.currentRenderMethod + 1;
     }, 1000)
@@ -78,7 +78,7 @@ class App extends Component {
     return this.createShader(shaderCode, gl.FRAGMENT_SHADER);
   }
 
-  createShaderProgram = (shaders: WebGLShader[]) => {
+  createShaderProgram = (shaders: WebGLShader[]): WebGLProgram => {
     const { gl } = this;
     // create shader program
     const shaderProgram = gl.createProgram()!;
@@ -95,17 +95,57 @@ class App extends Component {
     return shaderProgram;
   }
 
+  createAttribute = (shaderProgram: WebGLProgram, attributeName: string, size: number) => {
+    const { gl } = this;
+
+    let attribPointer = gl.getAttribLocation(shaderProgram, attributeName);
+
+    // point an attribute to the currently bound VBO
+    gl.vertexAttribPointer(attribPointer, size, gl.FLOAT, false, 0, 0);
+
+    // enable attribute
+    gl.enableVertexAttribArray(attribPointer);
+  }
+
   initializeCanvas = () => {
     const canvas: HTMLCanvasElement = document.getElementById('webgl-target')! as HTMLCanvasElement;
     // const gl: WebGL2RenderingContext = canvas.getContext('webgl') as WebGL2RenderingContext;
-    const gl: WebGLRenderingContext = canvas.getContext('webgl') as WebGLRenderingContext;
+    const gl: WebGLRenderingContext = canvas.getContext('webgl')!;
 
     this.gl = gl;
-    this.canvas = canvas;
+  }
+
+  initializeQuad = () => {
+    const { gl } = this;
+
+    const vertices = [
+      -0.5,0.5,0.0,
+      -0.5,-0.5,0.0,
+      0.5,-0.5,0.0,
+      0.5,0.5,0.0 
+   ];
+   const vertex_buffer = this.createVertexBuffer(vertices);
+
+   const indices = [3,2,1,3,1,0];
+   const index_buffer = this.createIndexBuffer(indices);
+
+   const vertShader = this.createVertexShader(vertex3);
+   const fragShader = this.createFragmentShader(frag4);
+
+   const shaderProgram = this.createShaderProgram([vertShader, fragShader]);
+
+   // bind vertex buffer object
+   gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+
+   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
+
+   this.createAttribute(shaderProgram, 'coordinates', 3);
+
+   this.drawElements(indices.length);
   }
 
   intializeLines = () => {
-    const { gl, canvas } = this;
+    const { gl } = this;
     const vertices = [
       -0.7,-0.1,0,
       -0.3,0.6,0,
@@ -127,25 +167,19 @@ class App extends Component {
     gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
 
     // get attribute location
-    let coord = gl.getAttribLocation(shaderProgram, 'coordinates');
-
-    // point an attribute to the currently bound VBO
-    gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
-
-    // enable attribute
-    gl.enableVertexAttribArray(coord);
+    this.createAttribute(shaderProgram, 'coordinates', 3);
 
     // enable the depth test
     gl.enable(gl.DEPTH_TEST);
 
     // set the viewport
-    gl.viewport(0,0,canvas.width, canvas.height);
+    gl.viewport(0,0, gl.canvas.width, gl.canvas.height);
 
     this.drawLines();
   }
 
   intializeComplexTriangle = () => {
-    const { gl, canvas } = this;
+    const { gl } = this;
 
     const vertices = [
       -0.5,0.5,0.0,
@@ -169,25 +203,19 @@ class App extends Component {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
 
     // get attribute location
-    let coord = gl.getAttribLocation(shaderProgram, 'coordinates');
-
-    // point an attribute to the currently bound VBO
-    gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
-
-    // enable attribute
-    gl.enableVertexAttribArray(coord);
+    this.createAttribute(shaderProgram, 'coordinates', 3);
 
     // enable the depth test
     gl.enable(gl.DEPTH_TEST);
 
     // set the viewport
-    gl.viewport(0,0,canvas.width, canvas.height);
+    gl.viewport(0,0, gl.canvas.width, gl.canvas.height);
 
     this.drawElements(indices.length);
   }
 
   initializePoints = () => {
-    const { gl, canvas } = this;
+    const { gl } = this;
     const verticies = [
       -0.5,0.5,0.0,
       0.0,0.5,0.0,
@@ -206,25 +234,19 @@ class App extends Component {
     gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
 
     // get attribute location
-    let coord = gl.getAttribLocation(shaderProgram, 'coordinates');
-
-    // point an attribute to the currently bound VBO
-    gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
-
-    // enable attribute
-    gl.enableVertexAttribArray(coord);
+    this.createAttribute(shaderProgram, 'coordinates', 3);
 
     // enable the depth test
     gl.enable(gl.DEPTH_TEST);
 
     // set the viewport
-    gl.viewport(0,0,canvas.width, canvas.height);
+    gl.viewport(0,0, gl.canvas.width, gl.canvas.height);
 
     this.drawPoints();
   }
 
   initializeTriangle = () => {
-    const { gl, canvas } = this;
+    const { gl } = this;
     let vertices = [-0.9, 0.9, -0.1, -0.9, 0.8, 0.2,];
 
     // create new buffer object
@@ -248,19 +270,13 @@ class App extends Component {
     gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
 
     // get attribute location
-    let coord = gl.getAttribLocation(shaderProgram, 'coordinates');
-
-    // point an attribute to the currently bound VBO
-    gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
-
-    // enable attribute
-    gl.enableVertexAttribArray(coord);
+    this.createAttribute(shaderProgram, 'coordinates', 2);
 
     // enable the depth test
     gl.enable(gl.DEPTH_TEST);
 
     // set the viewport
-    gl.viewport(0,0,canvas.width, canvas.height);
+    gl.viewport(0,0, gl.canvas.width, gl.canvas.height);
 
     this.drawTriangles();
   }
